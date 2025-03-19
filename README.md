@@ -26,6 +26,13 @@ Use `-h` or `--help` for more information on this module.
 
 ### Question 2: Analyzing Treatment Effect
 
+Usage:
 
+```bash
+cell_treatment_analyzer.py <treatment_csv> [<relative_cell_count_csv>] [-o <output_file>] \
+    [-b <output_boxplot_file>] [-d <csv_delimiter>]
+```
+
+Use `-h` or `--help` for more information on this module.
 
 ## Database

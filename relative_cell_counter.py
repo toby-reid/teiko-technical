@@ -99,22 +99,24 @@ def parse_args(args: list[str]) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description=("Reads and converts total cell count in a CSV to relative frequency of total "
-                     "cell count.")
+                     "cell count, outputting the result in CSV form."),
+        epilog="The output of this tool can be used as the second input of the analyzer tool.",
     )
     parser.add_argument(
         "csv_file",
         action=ValidatePathAction,
-        help="The CSV file to parse",
+        help="The CSV file to parse (e.g., cell-count.csv)",
     )
     parser.add_argument(
         "-o", "--output",
         action=ExpandPathAction,
-        help="The file to which CSV output should be written",
+        help="The file to which CSV output should be written (default is stdout)",
     )
     parser.add_argument(
         "-d", "--delimiter",
         default=DEFAULT_DELIMITER,
-        help="The delimiter used in the given CSV, and to use in the output CSV",
+        help=("The delimiter used in the given CSV, and to use in the output CSV (default is '"
+              f"{DEFAULT_DELIMITER}')"),
     )
     return parser.parse_args(args)
 
