@@ -11,7 +11,28 @@ Author: Toby Reid
 import argparse
 import sys
 
-from common import DEFAULT_DELIMITER, ValidatePathAction, ExpandPathAction
+from matplotlib import pyplot
+
+from common import CELL_TYPES, DEFAULT_DELIMITER, SAMPLE_HEADER, \
+    ValidatePathAction, ExpandPathAction, get_csv_headers, read_csv, write_csv
+from relative_cell_counter import convert_cell_count
+from relative_cell_counter import OUTPUT_HEADERS as RELATIVE_HEADERS
+
+
+# 2. Among patients who have treatment tr1, we are interested in comparing the differences in cell
+# population relative frequencies of melanoma patients who respond (responders) to tr1 versus those
+# who do not (non-responders), with the overarching aim of predicting response to treatment tr1.
+# Response information can be found in column response, with value y for responding and value n for
+# non-responding. Please only include PBMC (blood) samples.
+
+# a. For each immune cell population, please generate a boxplot of the population relative
+# frequencies comparing responders versus non-responders.
+
+# b. Which cell populations are significantly different in relative frequencies between responders
+# and non-responders? Please include statistics to support your conclusion.
+
+
+
 
 
 def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
@@ -60,6 +81,21 @@ def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
 def main(args: list[str]) -> int:
     """TODO"""
     arg_values = parse_args(args)
+    required_headers = [SAMPLE_HEADER] + CELL_TYPES
+    treatment_headers, treatment_csv = read_csv(arg_values.treatment_csv, required_headers,
+                                                delimiter=arg_values.delimiter)
+
+    if arg_values.relative_cell_count_csv:
+        relative_headers, relative_csv = read_csv(arg_values.relative_cell_count_csv,
+                                                  RELATIVE_HEADERS, delimiter=arg_values.delimiter)
+    else:
+        relative_csv = convert_cell_count(treatment_headers, treatment_csv)
+        relative_headers = get_csv_headers(relative_csv.pop(0), RELATIVE_HEADERS)
+        if arg_values.output:
+            write_csv(arg_values.output, relative_csv, delimiter=arg_values.delimiter)
+
+    
+
     return 0
 
 
