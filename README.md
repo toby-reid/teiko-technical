@@ -13,7 +13,7 @@ Tools can be run as an executable (`./tool_name.py` from the command line), or b
 Usage:
 
 ```bash
-cell_count_converter.py <input_csv> [-o <output_csv>] [-d <csv_delimiter>]
+relative_cell_counts.py <input_csv> [-o <output_csv>] [-d <csv_delimiter>]
 ```
 
 Use `-h` or `--help` for more information on this module.
