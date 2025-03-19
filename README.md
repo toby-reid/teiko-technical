@@ -5,7 +5,13 @@ applicable.
 
 ## Python
 
-Tools can be run as an executable (`./tool_name.py` from the command line), or by calling
+Ensure you've installed all necessary dependencies by running the following:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+Tools can then be run as an executable (`./tool_name.py` from the command line), or by calling
 `python3 tool_name.py`.
 
 ### Question 1: Cell Count Conversions
@@ -13,7 +19,7 @@ Tools can be run as an executable (`./tool_name.py` from the command line), or b
 Usage:
 
 ```bash
-relative_cell_counts.py <input_csv> [-o <output_csv>] [-d <csv_delimiter>]
+relative_cell_counter.py <input_csv> [-o <output_csv>] [-d <csv_delimiter>]
 ```
 
 Use `-h` or `--help` for more information on this module.
