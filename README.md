@@ -1,3 +1,5 @@
+<!Author: Toby Reid>
+
 # Toby Reid - Teiko.bio Technical Assessment
 
 This file lists each assessment question response, as well as how to run or check each, if
