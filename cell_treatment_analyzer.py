@@ -16,7 +16,7 @@ from matplotlib import pyplot
 from matplotlib.figure import Figure as PyplotFigure
 
 from common import CELL_TYPES, DEFAULT_DELIMITER, SAMPLE_HEADER, Csv, CsvHeaders, \
-    ValidatePathAction, ExpandPathAction, get_csv_headers, read_csv, write_csv
+    ExpandPathAction, ValidatePathAction, get_csv_headers, read_csv, write_csv
 from relative_cell_counter import convert_cell_count
 from relative_cell_counter import OUTPUT_HEADERS as RELATIVE_HEADERS
 
