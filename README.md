@@ -7,14 +7,23 @@ applicable.
 
 ## Python
 
+> [!Note]
+> Due to their use of Python's `StrEnum` class, these tools must be run with at least
+> **Python 3.11**.
+
 Ensure you've installed all necessary dependencies by running the following:
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-Tools can then be run as an executable (`./tool_name.py` from the command line), or by calling
-`python3 tool_name.py`.
+Tools can then be run as a normal shell script (`./tool_name.py` from the command line),
+or by calling `python3 tool_name.py`.  
+Use the `-h` or `--help` flags for more information on each.
+
+Due to the nature of this assessment, I felt it best to forego unit test files, though each
+function was designed with such in mind, keeping file writing and image creation to a minimum
+to ensure most of the code could be covered by tests.
 
 ### Question 1: Cell Count Conversions
 
@@ -23,8 +32,6 @@ Usage:
 ```bash
 relative_cell_counter.py <input_csv> [-o <output_csv>] [-d <csv_delimiter>]
 ```
-
-Use `-h` or `--help` for more information on this module.
 
 ### Question 2: Analyzing Treatment Effect
 
@@ -35,9 +42,7 @@ cell_treatment_analyzer.py <treatment_csv> \
     [-r <relative_cell_count_csv>] [-b <output_boxplot_dir>] [-d <csv_delimiter>]
 ```
 
-Use `-h` or `--help` for more information on this module.
-
-#### Question 2b: Analysis of Treatment Effect
+#### 2b: Analysis of Treatment Effect
 
 The following populations are significantly different in relative frequencies between responders
 and non-responders:
@@ -195,7 +200,7 @@ SELECT samples.id, 'bladder cancer' AS ai_model
 
 ### Question 5: Queries for Counting
 
-***Write queries to provide the following further breakdowns for the samples in**
+**Write queries to provide the following further breakdowns for the samples in**
 **[Question 4](#question-4-query-for-specific-cases).**
 
 Each of the following expands on the response from Question 4, except for the `'bladder cancer'`
