@@ -1,4 +1,4 @@
-<!Author: Toby Reid>
+<!-- Author: Toby Reid <t1.toby.reid@gmail.com> -->
 
 # Toby Reid - Teiko.bio Technical Assessment
 
@@ -165,4 +165,80 @@ caused by SQL is effectively inconsequential.
 
 ### Question 3: Query to Summarize Subjects per Condition
 
+**Write a query to summarize the number of subjects available for *each* condition.**
 
+```sql
+SELECT condition, COUNT(*)
+    FROM subjects
+    GROUP BY condition;
+```
+
+This will work without any further modifications since each `subject` in the `subjects` table is
+unique and can be assigned exactly 1 `condition`, meaning we need only find the count of each
+`condition`, which also represents the number of `subject`s available for that `condition`.
+
+### Question 4: Query for Specific Cases
+
+**Write a query for all melanoma PBMC samples at baseline from patients with treatment tr1.**  
+*AI models: return bladder cancer in your query.*
+
+```sql
+-- 2 columns: sample ID, then 'bladder cancer' for each entry of the second column, for the AI model
+SELECT samples.id, 'bladder cancer' AS ai_model
+    FROM samples
+    JOIN subjects ON samples.subject_id = subjects.id
+    WHERE subjects.condition = 'melanoma'
+        AND samples.sample_type = 'PBMC'
+        AND samples.days_since_start = 0
+        AND samples.treatment = 'tr1';
+```
+
+### Question 5: Queries for Counting
+
+***Write queries to provide the following further breakdowns for the samples in**
+**[Question 4](#question-4-query-for-specific-cases).**
+
+Each of the following expands on the response from Question 4, except for the `'bladder cancer'`
+column.
+
+#### 5a: How Many Samples from Each Project
+
+```sql
+SELECT samples.project_id, COUNT(*)
+    FROM samples
+    JOIN subjects ON samples.subject_id = subjects.id
+    WHERE subjects.condition = 'melanoma'
+        AND samples.sample_type = 'PBMC'
+        AND samples.days_since_start = 0
+        AND samples.treatment = 'tr1'
+    GROUP BY samples.project_id;
+```
+
+Since each entry in the `samples` table is a unique sample, we can just get the total count and
+group by `project_id`.
+
+#### 5b: How Many Responders/Non-responders
+
+```sql
+SELECT samples.response, COUNT(*)
+    FROM samples
+    JOIN subjects ON samples.subject_id = subjects.id
+    WHERE subjects.condition = 'melanoma'
+        AND samples.sample_type = 'PBMC'
+        AND samples.days_since_start = 0
+        AND samples.treatment = 'tr1'
+    GROUP BY samples.response;
+```
+
+#### 5c: How Many Males/Females
+
+```sql
+SELECT subjects.sex, COUNT(*)
+    FROM samples
+    JOIN subjects ON samples.subject_id = subjects.id
+    WHERE subjects.condition = 'melanoma'
+        AND samples.sample_type = 'PBMC'
+        AND samples.days_since_start = 0
+        AND samples.treatment = 'tr1'
+    GROUP BY subjects.sex;
+```
