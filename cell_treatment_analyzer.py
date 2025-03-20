@@ -47,7 +47,17 @@ NONRESPONDING = "n"
 
 def get_sample_relative(relative_headers: CsvHeaders, relative_csv: Csv, sample_id: str) \
         -> dict[CELL_TYPES, float]:
-    """TODO"""
+    """
+    Retrieves all relative percentages of a given sample for each of the cell type populations.
+
+    Args:
+        relative_headers (CsvHeaders): A mapping of header names to their respective indices
+        relative_csv (Csv):            The CSV containing the relative cell counts
+        sample_id (str):               The sample name for which to retrieve the relative counts
+
+    Returns:
+        dict[CELL_TYPES, float]: A mapping of cell types to their respective relative percentages
+    """
     sample_responders: dict[CELL_TYPES, float] = {}
     for csv_row in relative_csv:
         if csv_row[relative_headers[SAMPLE_HEADER]] == sample_id:
@@ -64,7 +74,23 @@ def get_sample_relative(relative_headers: CsvHeaders, relative_csv: Csv, sample_
 def calculate_responders(treatment_headers: CsvHeaders, treatment_csv: Csv,
                          relative_headers: CsvHeaders, relative_csv: Csv) \
         -> tuple[dict[CELL_TYPES, list[float]], dict[CELL_TYPES, list[float]]]:
-    """TODO"""
+    """
+    Locates all data points for responders and non-responders for each data type within the given
+    treatment data.
+
+    Args:
+        treatment_headers (CsvHeaders): A mapping of header names to their respective indices
+        treatment_csv (Csv):            The CSV containing the treatment data
+        relative_headers (CsvHeaders):  A mapping of header names to their respective indices
+        relative_csv (Csv):             The CSV containing the relative cell counts
+
+    Returns:
+        tuple[dict[CELL_TYPES, list[float]], dict[CELL_TYPES, list[float]]]:
+            responders:    A mapping of cell types to lists of relative counts samples where the \
+                           data indicate a response
+            nonresponders: A mapping of cell types to lists of relative counts samples where the \
+                           data indicate no response
+    """
     population_responders: dict[CELL_TYPES, list[float]] = {}
     population_nonresponders: dict[CELL_TYPES, list[float]] = {}
     for cell_type in CELL_TYPES:
@@ -86,8 +112,20 @@ def calculate_responders(treatment_headers: CsvHeaders, treatment_csv: Csv,
     return population_responders, population_nonresponders
 
 
-def generate_boxplot(label: str, responders: list[int], nonresponders: list[int]) -> PyplotFigure:
-    """TODO"""
+def generate_boxplot(label: str, responders: list[float], nonresponders: list[float]) \
+        -> PyplotFigure:
+    """
+    Generates a singular boxplot comparing the relative cell counts of a cell type, showing both
+    responders and nonresponders.
+
+    Args:
+        label (str):                 The label to use for the plot (the cell type)
+        responders (list[float]):    The relative cell counts for responders
+        nonresponders (list[float]): The relative cell counts for nonresponders
+
+    Returns:
+        PyplotFigure: The generated boxplot
+    """
     figure, axes = pyplot.subplots()
     # Builds from the bottom up, so put nonresponders first to responders is on top
     axes.boxplot([nonresponders, responders], vert=False,
@@ -101,7 +139,18 @@ def generate_boxplot(label: str, responders: list[int], nonresponders: list[int]
 def generate_boxplots(treatment_headers: CsvHeaders, treatment_csv: Csv,
                       relative_headers: CsvHeaders, relative_csv: Csv) \
         -> dict[CELL_TYPES, PyplotFigure]:
-    """TODO"""
+    """
+    Calculates and generates boxplots for each cell type, comparing responders and nonresponders.
+
+    Args:
+        treatment_headers (CsvHeaders): A mapping of header names to their respective indices
+        treatment_csv (Csv):            The CSV containing the treatment data
+        relative_headers (CsvHeaders):  A mapping of header names to their respective indices
+        relative_csv (Csv):             The CSV containing the relative cell counts
+
+    Returns:
+        dict[CELL_TYPES, PyplotFigure]: A mapping of cell types to their respective boxplots
+    """
     responders, nonresponders = calculate_responders(treatment_headers, treatment_csv,
                                                      relative_headers, relative_csv)
     boxplots: dict[CELL_TYPES, PyplotFigure] = {}
@@ -112,7 +161,15 @@ def generate_boxplots(treatment_headers: CsvHeaders, treatment_csv: Csv,
 
 
 def parse_args(args: list[str]) -> argparse.Namespace:
-    """TODO"""
+    """
+    Parses command-line arguments for this tool.
+
+    Args:
+        args (list[str]): The command-line arguments (not including this file's name)
+
+    Returns:
+        argparse.Namespace: The parsed arguments
+    """
     parser = argparse.ArgumentParser(
         description=("Reads and interprets cell counts compared to treatment effectiveness in "
                      "various samples, creating a box plot to help in analyzation."),
@@ -144,17 +201,27 @@ def parse_args(args: list[str]) -> argparse.Namespace:
               f"{DEFAULT_DELIMITER}')"),
     )
     arg_values = parser.parse_args(args)
+    # Ensure that, if given a boxplot directory, we don't try to treat an existing file like a
+    # directory
     if arg_values.boxplot_dir \
             and os.path.exists(arg_values.boxplot_dir) \
             and not os.path.isdir(arg_values.boxplot_dir):
         print(f"Warning: Can not save boxplots to {arg_values.boxplot_dir}, as it already exists "
               "but is not a directory.", file=sys.stderr)
-        arg_values.boxplot_dir = None
+        arg_values.boxplot_dir = None  # Display the plots in windows instead, like the default
     return arg_values
 
 
 def main(args: list[str]) -> int:
-    """TODO"""
+    """
+    Entry point for the cell treatment analyzer script.
+
+    Args:
+        args (list[str]): Command-line arguments passed to the script (not including this file)
+
+    Returns:
+        int: Exit code of the script (0 on success)
+    """
     arg_values = parse_args(args)
     required_headers = [SAMPLE_HEADER, TREATMENT_HEADER, SAMPLE_TYPE_HEADER, RESPONSE_HEADER] \
                        + list(CELL_TYPES)
