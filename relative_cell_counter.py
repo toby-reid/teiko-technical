@@ -87,7 +87,7 @@ def convert_cell_count(csv_headers: CsvHeaders, csv_rows: Csv) -> Csv:
     return output_csv
 
 
-def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
+def parse_args(args: list[str]) -> argparse.Namespace:
     """
     Parses command-line arguments for this tool.
 
@@ -119,9 +119,7 @@ def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
         help=("The delimiter used in the given CSV, and to use in the output CSV (default is '"
               f"{DEFAULT_DELIMITER}')"),
     )
-    if exit_on_fail:
-        return parser.parse_args(args)
-    return parser.parse_known_args(args)[0]
+    return parser.parse_args(args)
 
 
 def main(args: list[str]) -> int:
@@ -135,7 +133,7 @@ def main(args: list[str]) -> int:
         int: Exit code of the script (0 on success)
     """
     arg_values = parse_args(args)
-    required_headers = [SAMPLE_HEADER] + CELL_TYPES
+    required_headers = [SAMPLE_HEADER] + list(CELL_TYPES)
     csv_headers, csv_rows = read_csv(arg_values.csv_file, required_headers,
                                      delimiter=arg_values.delimiter)
     output_csv = convert_cell_count(csv_headers, csv_rows)

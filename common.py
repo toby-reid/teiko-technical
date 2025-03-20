@@ -67,8 +67,8 @@ def get_csv_headers(header_row: list[str], required_headers: list[str]) -> CsvHe
         ValueError: if the provided header row is missing any required headers
     """
     if not all((header in header_row) for header in required_headers):
-        raise ValueError("CSV is missing one or more required headers; expected all of "
-                         f"{required_headers}")
+        raise ValueError("CSV is missing one or more required headers; expected all of '"
+                         + "', '".join(str(header) for header in required_headers) + "'")
     csv_headers: CsvHeaders = {}
     for header in required_headers:
         csv_headers[header] = header_row.index(header)
@@ -97,7 +97,6 @@ def read_csv(csv_path: str, required_headers: list[str], delimiter: str=DEFAULT_
         raise ValueError(f"Failed to parse empty CSV: {csv_path}")
 
     header_row = csv_rows.pop(0)
-    required_headers = [SAMPLE_HEADER] + list(CELL_TYPES)
     return get_csv_headers(header_row, required_headers), csv_rows
 
 

@@ -9,14 +9,27 @@ Author: Toby Reid
 """
 
 import argparse
+import os
 import sys
 
 from matplotlib import pyplot
+from matplotlib.figure import Figure as PyplotFigure
 
-from common import CELL_TYPES, DEFAULT_DELIMITER, SAMPLE_HEADER, \
+from common import CELL_TYPES, DEFAULT_DELIMITER, SAMPLE_HEADER, Csv, CsvHeaders, \
     ValidatePathAction, ExpandPathAction, get_csv_headers, read_csv, write_csv
 from relative_cell_counter import convert_cell_count
 from relative_cell_counter import OUTPUT_HEADERS as RELATIVE_HEADERS
+
+
+TREATMENT_HEADER = "treatment"
+TREATMENT = "tr1"
+
+SAMPLE_TYPE_HEADER = "sample_type"
+INCLUDE_SAMPLE_TYPES = ("PBMC",)
+
+RESPONSE_HEADER = "response"
+RESPONDING = "y"
+NONRESPONDING = "n"
 
 
 # 2. Among patients who have treatment tr1, we are interested in comparing the differences in cell
@@ -32,10 +45,73 @@ from relative_cell_counter import OUTPUT_HEADERS as RELATIVE_HEADERS
 # and non-responders? Please include statistics to support your conclusion.
 
 
+def get_sample_relative(relative_headers: CsvHeaders, relative_csv: Csv, sample_id: str) \
+        -> dict[CELL_TYPES, float]:
+    """TODO"""
+    sample_responders: dict[CELL_TYPES, float] = {}
+    for csv_row in relative_csv:
+        if csv_row[relative_headers[SAMPLE_HEADER]] == sample_id:
+            cell_type = csv_row[relative_headers[RELATIVE_HEADERS.POPULATION]]
+            if sample_responders.get(cell_type):
+                raise ValueError("Given CSV is invalid; expected 1 entry per population, per "
+                                 f"sample, but got multiple entries for sample {sample_id} with "
+                                 f"population {cell_type}")
+            population_percentage = float(csv_row[relative_headers[RELATIVE_HEADERS.PERCENTAGE]])
+            sample_responders[cell_type] = population_percentage
+    return sample_responders
 
 
+def calculate_responders(treatment_headers: CsvHeaders, treatment_csv: Csv,
+                         relative_headers: CsvHeaders, relative_csv: Csv) \
+        -> tuple[dict[CELL_TYPES, list[float]], dict[CELL_TYPES, list[float]]]:
+    """TODO"""
+    population_responders: dict[CELL_TYPES, list[float]] = {}
+    population_nonresponders: dict[CELL_TYPES, list[float]] = {}
+    for cell_type in CELL_TYPES:
+        population_responders[cell_type] = []
+        population_nonresponders[cell_type] = []
 
-def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
+    for sample in treatment_csv:
+        if sample[treatment_headers[TREATMENT_HEADER]] == TREATMENT \
+                and sample[treatment_headers[SAMPLE_TYPE_HEADER]] in INCLUDE_SAMPLE_TYPES:
+            sample_id = sample[treatment_headers[SAMPLE_HEADER]]
+            sample_relative_count = get_sample_relative(relative_headers, relative_csv, sample_id)
+            # Select which counter to use, based on whether the sample is a responder
+            population_counter = \
+                population_responders if sample[treatment_headers[RESPONSE_HEADER]] == RESPONDING \
+                else population_nonresponders
+            for cell_type, relative_count in sample_relative_count.items():
+                population_counter[cell_type].append(relative_count)
+
+    return population_responders, population_nonresponders
+
+
+def generate_boxplot(label: str, responders: list[int], nonresponders: list[int]) -> PyplotFigure:
+    """TODO"""
+    figure, axes = pyplot.subplots()
+    # Builds from the bottom up, so put nonresponders first to responders is on top
+    axes.boxplot([nonresponders, responders], vert=False,
+                 tick_labels=["nonresponders", f"{TREATMENT} responders"])
+    axes.set_title(label)
+    axes.set_xlabel("Percentage of cells of this type within sample")
+    figure.tight_layout()
+    return figure
+
+
+def generate_boxplots(treatment_headers: CsvHeaders, treatment_csv: Csv,
+                      relative_headers: CsvHeaders, relative_csv: Csv) \
+        -> dict[CELL_TYPES, PyplotFigure]:
+    """TODO"""
+    responders, nonresponders = calculate_responders(treatment_headers, treatment_csv,
+                                                     relative_headers, relative_csv)
+    boxplots: dict[CELL_TYPES, PyplotFigure] = {}
+    for cell_type in CELL_TYPES:
+        boxplots[cell_type] = generate_boxplot(cell_type, responders[cell_type],
+                                               nonresponders[cell_type])
+    return boxplots
+
+
+def parse_args(args: list[str]) -> argparse.Namespace:
     """TODO"""
     parser = argparse.ArgumentParser(
         description=("Reads and interprets cell counts compared to treatment effectiveness in "
@@ -49,23 +125,17 @@ def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
         help="The CSV file containing treatment and cell count data (e.g., cell-count.csv)",
     )
     parser.add_argument(
-        "relative_cell_count_csv",
-        action=ValidatePathAction,
-        required=False,
+        "-r", "--relative-csv",
+        action=ExpandPathAction,
+        nargs='?',  # the argument is optional
         help=("A CSV file containing relative cell counts, as generated by relative_cell_counter. "
-              "If none is provided, one will be generated (the output of which can be set with the "
-              "'-o' flag; otherwise, it will be printed to console)"),
+              "If the file does not exist, it will be created"),
     )
     parser.add_argument(
-        "-o", "--output",
+        "-b", "--boxplot-dir",
         action=ExpandPathAction,
-        help="The output CSV file, if generating a relative cell count CSV",
-    )
-    parser.add_argument(
-        "-b", "--boxplot",
-        action=ExpandPathAction,
-        help=("The file to save the generated boxplot as. If none is provided, instead of "
-              "generating a boxplot, the quartiles and median will be printed to console"),
+        help=("The directory under which to save the generated boxplots. If none is provided, "
+              "it will just be displayed to the user in separate windows"),
     )
     parser.add_argument(
         "-d", "--delimiter",
@@ -73,28 +143,51 @@ def parse_args(args: list[str], exit_on_fail: bool=True) -> argparse.Namespace:
         help=("The delimiter used in the given CSV, and to use in the output CSV (default is '"
               f"{DEFAULT_DELIMITER}')"),
     )
-    if exit_on_fail:
-        return parser.parse_args(args)
-    return parser.parse_known_args(args)[0]
+    arg_values = parser.parse_args(args)
+    if arg_values.boxplot_dir \
+            and os.path.exists(arg_values.boxplot_dir) \
+            and not os.path.isdir(arg_values.boxplot_dir):
+        print(f"Warning: Can not save boxplots to {arg_values.boxplot_dir}, as it already exists "
+              "but is not a directory.", file=sys.stderr)
+        arg_values.boxplot_dir = None
+    return arg_values
 
 
 def main(args: list[str]) -> int:
     """TODO"""
     arg_values = parse_args(args)
-    required_headers = [SAMPLE_HEADER] + CELL_TYPES
+    required_headers = [SAMPLE_HEADER, TREATMENT_HEADER, SAMPLE_TYPE_HEADER, RESPONSE_HEADER] \
+                       + list(CELL_TYPES)
     treatment_headers, treatment_csv = read_csv(arg_values.treatment_csv, required_headers,
                                                 delimiter=arg_values.delimiter)
 
-    if arg_values.relative_cell_count_csv:
-        relative_headers, relative_csv = read_csv(arg_values.relative_cell_count_csv,
-                                                  RELATIVE_HEADERS, delimiter=arg_values.delimiter)
-    else:
+    if not arg_values.relative_csv or not os.path.isfile(arg_values.relative_csv):
+        # Make our own CSV
         relative_csv = convert_cell_count(treatment_headers, treatment_csv)
         relative_headers = get_csv_headers(relative_csv.pop(0), RELATIVE_HEADERS)
-        if arg_values.output:
-            write_csv(arg_values.output, relative_csv, delimiter=arg_values.delimiter)
+        if arg_values.relative_csv:
+            if not os.path.exists(arg_values.relative_csv):
+                file_csv = [RELATIVE_HEADERS] + relative_csv
+                write_csv(arg_values.relative_csv, file_csv, delimiter=arg_values.delimiter)
+            else:
+                print(f"Couldn't write CSV file {arg_values.relative_csv} as the path already "
+                      "exists, yet is not a file", file=sys.stderr)
+    else:
+        # We were provided with a CSV
+        relative_headers, relative_csv = read_csv(arg_values.relative_csv,
+                                                  RELATIVE_HEADERS,
+                                                  delimiter=arg_values.delimiter)
 
-    
+    boxplots = generate_boxplots(treatment_headers, treatment_csv, relative_headers, relative_csv)
+    if arg_values.boxplot_dir:
+        os.makedirs(arg_values.boxplot_dir, exist_ok=True)
+        for cell_type, boxplot in boxplots.items():
+            file_path = os.path.join(arg_values.boxplot_dir, f"{cell_type}.png")
+            boxplot.savefig(file_path)
+            print(f"Saved {cell_type} plot as {file_path}")
+    else:
+        print("Displaying all charts in separate windows")
+        pyplot.show()
 
     return 0
 
