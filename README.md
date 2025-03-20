@@ -88,3 +88,81 @@ statistical significance:
     This may indicate a lack of sample size, which negates good statistical analysis
 
 ## Database
+
+Below are the provided questions, along with my answers.
+
+### Question 1: Designing a Database
+
+**How would you design a database to capture the type of information and data in cell-count.csv?**
+
+CSVs are very convenient and versatile, but they can also be somewhat slow to parse, especially
+when filtering by a certain value, which can only be found via brute force.
+
+I would go for a SQL database, which are generally just as versatile as CSVs but are more
+powerful in their capabilities, as they can store different types of values than CSVs' string-only,
+and possess many querying capabilities that make them more efficient than CSVs.
+
+* Since each `sample` field is unique, I would use that as a primary key, dropping the "s" prefix
+  and just using integers, for efficient enumeration.
+* The `age`, `time_from_treatment_start`, and each of the cell type fields should all be integers.
+* The `response` field would be a boolean value, where `false` can indicate either a non-reaction,
+  or a sample with no treatment
+* The `sex` field would still be a string value, restricted to the values `M` or `F`
+* Since a `subject`'s `condition`, `age`, and `sex` will not change (or, at least, in terms of
+  `age`, not significantly), I would set aside a second table for a `subject`'s information.
+  * The `subjects` table would include a `name` or `title` field to record for the subject.
+
+With that in mind, the database would be designed something like the following:
+
+```sql
+CREATE TABLE subjects (
+    id SERIAL PRIMARY KEY, -- replaces the 'subject' column
+    title VARCHAR(255), -- subsidizes for the 'subject' column
+    sex ENUM('M', 'F') NOT NULL,
+    age INT CHECK(age > 0 AND age < 150), -- arbitrary bounds for age, to prevent typos
+    condition VARCHAR(255) NOT NULL
+);
+-- Create separate table for projects, so querying by project (int) is faster than by name (string)
+CREATE TABLE projects (
+    id SERIAL PRIMARY KEY, -- replaces the 'project' column
+    project VARCHAR(255) NOT NULL -- subsidizes for the 'project' column
+);
+CREATE TABLE samples (
+    id SERIAL PRIMARY KEY, -- replaces the 'sample' column
+    project_id INT NOT NULL, -- replaces the 'project' column, refers to a 'projects' table entry
+    subject_id INT NOT NULL, -- replaces the 'subject' column, refers to a 'subjects' table entry
+    treatment VARCHAR(255), -- NULL value replaces "none" in 'treatment' column
+    response BOOLEAN DEFAULT FALSE, -- no treatment, no response
+    sample_type VARCHAR(255) NOT NULL,
+    days_since_start INT NOT NULL, -- replaces the 'time_from_treatment_start' column, so that
+                                   -- we now have time units as well
+    b_cell INT NOT NULL, -- alternatively, instead of NOT NULL, each of these could be DEFAULT 0
+    cd8_t_cell INT NOT NULL,
+    cd4_t_cell INT NOT NULL,
+    nk_cell INT NOT NULL,
+    monocyte INT NOT NULL
+);
+```
+
+### Question 2: Database Advantages
+
+**What would be some advantages of capturing this information in a database?**
+
+As I noted in [Question 1](#question-1-designing-a-database), SQL is highly versatile and features
+efficient querying tools compared with CSV.
+For example, since the data points are now saved as integers instead of as strings, finding all
+samples in a single project will be much faster, as the query is making integer comparisons instead
+of string.
+
+This also allows for higher modularity and versatility, as some values can be reused.
+For example, since `sample`-to-`subject` forms a many-to-one relationship, a SQL database can
+abstract away the singular `subject`, reducing data sizes.
+
+The only true disadvantage of using SQL is that it can be somewhat difficult to update if, for
+example, we wish to add a new field to the `samples` table; however, CSVs share a similar problem,
+requiring a refactor of the entire file in the case of such an update, meaning the slight difficulty
+caused by SQL is effectively inconsequential.
+
+### Question 3: Query to Summarize Subjects per Condition
+
+
