@@ -93,7 +93,6 @@ def parse_args(args: list[str]) -> argparse.Namespace:
 
     Args:
         args (list[str]):     The list of command-line arguments (not including this file's name)
-        parse_on_fail (bool): Set `False` for testing purposes
 
     Returns:
         argparse.Namespace: The parsed arguments
